@@ -78,33 +78,40 @@ class HL72CSVTransform(val template: JsonObject) {
         }
     }
 
-    private fun processArray(elem: JsonArray, hl7Message: HL7ParseUtils, path: String, attr: String, parentElem: JsonElement?) {
-        val mapValues = mutableMapOf<String, Array<out Array<String>>?>()
+    private fun processArray(elem: JsonArray, hl7Message: HL7ParseUtils, path: String, attr: String, parentElem: JsonElement) {
+//        val combinedArray = JsonArray()
         elem.forEachIndexed { idx, prop ->
-            populateArrayProperties(prop, mapValues, hl7Message, path)
+            val mapValues = mutableMapOf<String, Array<out Array<String>>?>()
+            populateArrayProperties(prop, mapValues, hl7Message, path, parentElem)
+            val newArray = createNewJsonArray(mapValues, attr)
+//            if (parentElem is JsonArray)
+//                parentElem.addAll(newArray)
+//            else if ((parentElem as JsonObject).get(attr) is JsonArray) {
+//                (parentElem.get(attr) as JsonArray).addAll(newArray)
+////                combinedArray.addAll(newArray)
+//            }
+         //   ((parentElem.get(attr) as JsonArray) as JsonObject).add()
         }
-        val newArray = createNewJsonArray(mapValues, attr)
-        elem.remove(0)
-        elem.addAll(newArray)
 
-        if (parentElem is JsonObject) {
-            parentElem.remove(attr)
-            parentElem.add(attr, newArray)
-        } else if (parentElem is JsonArray) {
-            parentElem.add(newArray)
-        }
+
+//        if (parentElem is JsonObject) {
+//            parentElem.remove(attr)
+//            parentElem.add(attr, combinedArray)
+////        } else if (parentElem is JsonArray) {
+////            parentElem.add(newArray)
+//        }
     }
 
-    private fun populateArrayProperties(prop: JsonElement, map: MutableMap<String, Array<out Array<String>>?>, hl7Message: HL7ParseUtils, path: String) {
+    private fun populateArrayProperties(prop: JsonElement, map: MutableMap<String, Array<out Array<String>>?>, hl7Message: HL7ParseUtils, path: String, parentElement: JsonElement) {
         if (prop.isJsonObject) {
             (prop as JsonObject).entrySet().mapIndexed { i, pp ->
                 if (pp.value.isJsonPrimitive)
                     transformVariable(hl7Message, path.substring(1), pp.value.asString)?.let { map.put("$path.${pp.key}", it) }
                 else if (pp.value.isJsonObject) {
-                    populateArrayProperties(pp.value, map, hl7Message, "$path.${pp.key}")
+                    populateArrayProperties(pp.value, map, hl7Message, "$path.${pp.key}", parentElement)
                 } else if (pp.value.isJsonArray){
                     println("found array")
-                    processArray(pp.value as JsonArray, hl7Message, "$path.${pp.key}", pp.key, prop )
+                    processArray(pp.value as JsonArray, hl7Message, "$path.${pp.key}", pp.key, prop)
                 } else {
                     println("Not sure: ${pp.value.javaClass}")
                 }
