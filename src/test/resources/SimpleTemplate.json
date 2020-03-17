@@ -1,0 +1,22 @@
+{
+  "meta_program": "MSH[1]-6.1",
+  "meta_organization": "MSH[1]-4.1",
+  "arln_specimen_id": "SPM[1]-2.2.1",
+  "message_status": "OBR[?]",
+  "message_profile": "MSH[1]-21",
+  "patient": {
+    "Patient_ID": "PID[1]-1",
+    "Patient_ID_Assigner": "PID[1]-2"
+  },
+  "Observations Header": {
+        "Result_Status": "OBR-4",
+    "Date_result_release": "OBR-29",
+        "obs-obxs": [
+          {
+            "testMethod": "OBR->OBX-3",
+            "result": "OBR->OBX-5",
+            "obsSubID": "OBR->OBX-4"
+          }
+        ]
+  }
+}

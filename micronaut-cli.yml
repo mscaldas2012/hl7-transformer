@@ -1,0 +1,5 @@
+profile: service
+defaultPackage: hl7.transformer
+---
+testFramework: spek
+sourceLanguage: kotlin
