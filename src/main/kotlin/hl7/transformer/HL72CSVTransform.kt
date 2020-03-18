@@ -2,13 +2,14 @@ package hl7.transformer
 
 import com.google.gson.*
 import open.HL7PET.tools.HL7ParseUtils
+import java.lang.UnsupportedOperationException
 
 class HL72CSVTransform(val template: JsonObject) {
 
     companion object {
         //Factory Method
         fun getTransformer(configFile: String):HL72CSVTransform {
-            val configFile = javaClass.getResource(configFile).readText()
+            val configFile = HL72CSVTransform::class.java.getResource(configFile).readText()
             val parser = JsonParser()
             val jsonbody = parser.parse(configFile).asJsonObject
 
@@ -24,6 +25,16 @@ class HL72CSVTransform(val template: JsonObject) {
 
 
 
+    private fun createJsonTree(bline: List<String>, fromAttr: String, leaf: JsonArray):JsonElement  {
+        val retJson = JsonObject()
+        if (bline.size == 1)
+            retJson.add(bline[0], leaf)
+        else if (bline[0] != fromAttr)
+            return createJsonTree(bline.drop(1), fromAttr, leaf)
+        else
+            retJson.add(bline[0], createJsonTree(bline.drop(1), bline[1], leaf))
+        return retJson
+    }
 
     private fun createJsonTree(bline: List<String>, fromAttr: String,  leafNode: String): JsonElement {
         val retJson = JsonObject()
@@ -46,16 +57,21 @@ class HL72CSVTransform(val template: JsonObject) {
         targetPointer.add(newNodePointer.keySet().first(), newNodePointer.get(newNodePointer.keySet().first()))
     }
 
-
-
     private fun navigateJson(hl7Message: HL7ParseUtils, elem: JsonElement, parent: JsonElement? = null, path: String = "", attr: String = "", copyDoc: JsonElement, copyDocParent: JsonElement? =null) {
         if (elem.isJsonObject) {
             (elem as JsonObject).entrySet().map { prop -> navigateJson(hl7Message, prop.value, elem, "$path.${prop.key}", prop.key, (copyDoc as JsonObject).get(prop.key), copyDoc) }
         } else if (elem.isJsonArray) {
-            processArray(elem as JsonArray, hl7Message, path, attr, copyDocParent)
+            val map = mutableMapOf<String, Array<out Array<String>>?>() //Array<out Array<String>>?>
+            processArray(elem as JsonArray, map, hl7Message, path)
+            val newArray = createNewJsonArray(map, attr)
+            if (copyDocParent is JsonObject) {
+                copyDocParent.remove(attr)
+                copyDocParent.add(attr, newArray)
+            }
+
         } else if (elem.isJsonPrimitive) {
             val prim = elem.asJsonPrimitive.asString
-            val newValue:Any? = transformVariable(hl7Message, path.substring(1), prim)
+            val newValue:Any? = transformVariable(hl7Message, prim)
 //            if (newValue is String) {
 //                if (newValue != null && !newValue.equals(prim))
 //                    if (copyDocParent!!.isJsonObject)
@@ -78,40 +94,21 @@ class HL72CSVTransform(val template: JsonObject) {
         }
     }
 
-    private fun processArray(elem: JsonArray, hl7Message: HL7ParseUtils, path: String, attr: String, parentElem: JsonElement) {
-//        val combinedArray = JsonArray()
+    private fun processArray(elem: JsonArray, mapValues: MutableMap<String, Array<out Array<String>>?>, hl7Message: HL7ParseUtils, path: String) {
         elem.forEachIndexed { idx, prop ->
-            val mapValues = mutableMapOf<String, Array<out Array<String>>?>()
-            populateArrayProperties(prop, mapValues, hl7Message, path, parentElem)
-            val newArray = createNewJsonArray(mapValues, attr)
-//            if (parentElem is JsonArray)
-//                parentElem.addAll(newArray)
-//            else if ((parentElem as JsonObject).get(attr) is JsonArray) {
-//                (parentElem.get(attr) as JsonArray).addAll(newArray)
-////                combinedArray.addAll(newArray)
-//            }
-         //   ((parentElem.get(attr) as JsonArray) as JsonObject).add()
+            populateArrayProperties(prop, mapValues, hl7Message, path)
         }
-
-
-//        if (parentElem is JsonObject) {
-//            parentElem.remove(attr)
-//            parentElem.add(attr, combinedArray)
-////        } else if (parentElem is JsonArray) {
-////            parentElem.add(newArray)
-//        }
     }
 
-    private fun populateArrayProperties(prop: JsonElement, map: MutableMap<String, Array<out Array<String>>?>, hl7Message: HL7ParseUtils, path: String, parentElement: JsonElement) {
+    private fun populateArrayProperties(prop: JsonElement, map: MutableMap<String, Array<out Array<String>>?>, hl7Message: HL7ParseUtils, path: String) {
         if (prop.isJsonObject) {
-            (prop as JsonObject).entrySet().mapIndexed { i, pp ->
-                if (pp.value.isJsonPrimitive)
-                    transformVariable(hl7Message, path.substring(1), pp.value.asString)?.let { map.put("$path.${pp.key}", it) }
-                else if (pp.value.isJsonObject) {
-                    populateArrayProperties(pp.value, map, hl7Message, "$path.${pp.key}", parentElement)
-                } else if (pp.value.isJsonArray){
-                    println("found array")
-                    processArray(pp.value as JsonArray, hl7Message, "$path.${pp.key}", pp.key, prop)
+            (prop as JsonObject).entrySet().map{ pp ->
+                if (pp.value.isJsonPrimitive) {
+                        transformVariable(hl7Message, pp.value.asString)?.let { map.put("$path.${pp.key}", it) }
+                } else if (pp.value.isJsonObject) {
+                    populateArrayProperties(pp.value, map, hl7Message, "$path.${pp.key}")
+                } else if (pp.value.isJsonArray) {
+                   throw UnsupportedOperationException("Unable to parse Arrays of arrays")
                 } else {
                     println("Not sure: ${pp.value.javaClass}")
                 }
@@ -139,11 +136,15 @@ class HL72CSVTransform(val template: JsonObject) {
                         val tempJsonObj = createJsonTree(bline, attr, innerValue[0])
                         mergeNodes(newObj, tempJsonObj as JsonObject)
                     }
-    //                            }
                     else -> {
                         val newInnerArray = JsonArray()
-                        innerValue?.forEach { r -> newInnerArray.add(r) }
-                        newObj.add(k.key, newArray)
+                        innerValue.forEach { r -> newInnerArray.add(r) }
+                        val bline = k.key.split('.')
+                        val arrayWrapper = JsonObject()
+                        arrayWrapper.add(attr, newInnerArray)
+                        val tempJsonObj = createJsonTree(bline, attr, newInnerArray)
+                        mergeNodes(newObj, tempJsonObj as JsonObject)
+//                        newObj.add(k.key, newArray)
                     }
                 }
 
@@ -152,14 +153,12 @@ class HL72CSVTransform(val template: JsonObject) {
 
         }
         return newArray
+
     }
 
-//    private fun navigateArray( hl7Message: HL7ParseUtils, jsonArray: JsonArray, ) {
-//
-//    }
 
-    private fun transformVariable(hl7Parser: HL7ParseUtils, substring: String, prim: String?): Array<out Array<String>>? {
-            val optionalValue = hl7Parser.getValue(prim, false)
+    private fun transformVariable(hl7Parser: HL7ParseUtils,  prim: String?): Array<out Array<String>>? {
+            val optionalValue = hl7Parser.getValue(prim)
             if (optionalValue.isDefined)
                 return optionalValue.get()
             return null

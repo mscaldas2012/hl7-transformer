@@ -8,8 +8,7 @@
     "Patient_ID": "PID[1]-1",
     "Patient_ID_Assigner": "PID[1]-2"
   },
-  "ORC": [
-    {
+  "ORC-seg": {
       "Submitter_facility_name": "ORC-1",
       "Submitter_facility_state": "ORC-2",
       "Submitter_facility_zipcode": "ORC-3",
@@ -17,7 +16,7 @@
         {
           "Result_Status": "OBR-4",
           "Date_result_release": "OBR-29",
-          "OBX": [
+          "OBR->OBX": [
             {
               "obsSubID": "OBR->OBX-4",
               "result": "OBR->OBX-5",
@@ -28,10 +27,11 @@
               }
             }
           ],
-        "specimen": {
-          "Submitter_Specimen_ID": "SPM-2.2.1"
-        }
-      }]
+          "OBR->SPM": {
+            "Submitter_Specimen_ID": "SPM-2.2.1"
+          }
+      }
+      ]
     }
-  ]
+
 }
