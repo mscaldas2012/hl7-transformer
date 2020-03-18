@@ -28,4 +28,4 @@ OBX|4|SN|185-9^Ciprofloxacin Islt MIC^LN||^0.002|ug/mL^microgram per milliliter^
 OBX|5|SN|267-5^Gentamicin Islt MIC^LN||^2.0|ug/mL^microgram per milliliter^UCUM|||||F|||20170121|||||20170122||||MD.BALTIMORE.SPHL|1770 Ashland Avenue^Central Laboratory in Baltimore^Baltimore^MD^21205^USA^B||||||||||||
 OBX|6|SN|6932-8^Penicillin Islt MIC^LN||^2|ug/mL^microgram per milliliter^UCUM|||||F|||20170121|||||20170122||||MD.BALTIMORE.SPHL|1770 Ashland Avenue^Central Laboratory in Baltimore^Baltimore^MD^21205^USA^B||||||||||||
 OBX|7|SN|496-0^Tetracycline Islt MIC^LN||^0.03|ug/mL^microgram per milliliter^UCUM|||||F|||20170121|||||20170122||||MD.BALTIMORE.SPHL|1770 Ashland Avenue^Central Laboratory in Baltimore^Baltimore^MD^21205^USA^B||||||||||||
-SPM|1|210002&SF.SPHL&2.16.840.1.114222.4.1.77777.6&ISO^214MP000912&MD.BALTIMORE.SPHL&2.16.840.1.114222.4.1.95290&ISO||119393003^specimen from urethra (specimen)^SCT|||||||||||||20170121|20170122||||||||||||||||||
+SPM|1|210002&SF.SPHL&2.16.840.1.114222.4.1.77777.6&ISO^214MP000913&MD.BALTIMORE.SPHL&2.16.840.1.114222.4.1.95290&ISO||119393003^specimen from urethra (specimen)^SCT|||||||||||||20170121|20170122||||||||||||||||||
